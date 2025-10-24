@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest # Or a specific version like 0.5.2
+    ports:
+      - "8000:8000" # Maps host port 8000 to container port 8000
+    environment:
+      # Optional: Disable telemetry and enable persistence
+      - CHROMA_SERVER_NO_TELEMETRY=True
+      - CHROMA_SERVER_PERSIST_DIRECTORY=/chroma/data # Path inside the container for data persistence
+    volumes:
+      - chroma_data:/chroma/data # Mount a named volume for persistence
+volumes:
+  chroma_data:
