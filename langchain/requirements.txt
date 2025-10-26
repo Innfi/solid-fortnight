@@ -1,0 +1,3 @@
+langchain-community
+langchain-postgres
+psycopg2-binary
