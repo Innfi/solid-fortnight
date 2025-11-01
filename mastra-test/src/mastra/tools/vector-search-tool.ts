@@ -79,7 +79,7 @@ export const vectorSearchTool = createTool({
 
       // Format results
       const formattedResults = finalResults.map(result => ({
-        text: result.metadata?.text || result.text || '',
+        text: result.metadata?.text || '',
         score: result.score || 0,
         metadata: result.metadata || {},
       }));
@@ -99,81 +99,80 @@ export const vectorSearchTool = createTool({
 });
 
 // Specialized search tools for different content types
-export const productSearchTool = createTool({
-  id: 'search-products',
-  description: 'Search for products with price, category, and feature filtering',
-  inputSchema: z.object({
-    query: z.string().describe('Product search query'),
-    indexName: z.string().describe('Vector index name'),
-    maxPrice: z.number().optional().describe('Maximum price filter'),
-    category: z.string().optional().describe('Product category filter'),
-    brand: z.string().optional().describe('Brand filter'),
-    inStock: z.boolean().optional().describe('Filter for in-stock products only'),
-  }),
-  outputSchema: z.object({
-    products: z.array(z.object({
-      name: z.string(),
-      price: z.number(),
-      description: z.string(),
-      category: z.string(),
-      brand: z.string(),
-      score: z.number(),
-    })),
-    totalFound: z.number(),
-  }),
-  execute: async ({ context }) => {
-    const { query, indexName, maxPrice, category, brand, inStock } = context;
-    
-    // Build product-specific filter
-    const filter: Record<string, any> = {
-      contentType: 'product',
-    };
-    
-    if (maxPrice) {
-      filter['metadata.price'] = { $lte: maxPrice };
-    }
-    
-    if (category) {
-      filter['metadata.category'] = category;
-    }
-    
-    if (brand) {
-      filter['metadata.brand'] = brand;
-    }
-    
-    if (inStock) {
-      filter['metadata.availability.in_stock'] = true;
-    }
-
-    // Use the main search tool
-    const searchResult = await vectorSearchTool.execute({
-      context: {
-        query,
-        indexName,
-        topK: 10,
-        filter,
-        useReranking: true,
-        contentType: 'product',
-      },
-      mastra: null as any,
-    });
-
-    // Extract product information from results
-    const products = searchResult.results.map(result => {
-      const metadata = result.metadata;
-      return {
-        name: metadata.name || 'Unknown Product',
-        price: metadata.price || 0,
-        description: metadata.description || result.text,
-        category: metadata.category || 'Unknown',
-        brand: metadata.brand || 'Unknown',
-        score: result.score,
-      };
-    });
-
-    return {
-      products,
-      totalFound: products.length,
-    };
-  },
-});
+// export const productSearchTool = createTool({
+//   id: 'search-products',
+//   description: 'Search for products with price, category, and feature filtering',
+//   inputSchema: z.object({
+//     query: z.string().describe('Product search query'),
+//     indexName: z.string().describe('Vector index name'),
+//     maxPrice: z.number().optional().describe('Maximum price filter'),
+//     category: z.string().optional().describe('Product category filter'),
+//     brand: z.string().optional().describe('Brand filter'),
+//     inStock: z.boolean().optional().describe('Filter for in-stock products only'),
+//   }),
+//   outputSchema: z.object({
+//     products: z.array(z.object({
+//       name: z.string(),
+//       price: z.number(),
+//       description: z.string(),
+//       category: z.string(),
+//       brand: z.string(),
+//       score: z.number(),
+//     })),
+//     totalFound: z.number(),
+//   }),
+//   execute: async ({ context }) => {
+//     const { query, indexName, maxPrice, category, brand, inStock } = context;
+//     
+//     // Build product-specific filter
+//     const filter: Record<string, any> = {
+//       contentType: 'product',
+//     };
+//     
+//     if (maxPrice) {
+//       filter['metadata.price'] = { $lte: maxPrice };
+//     }
+//     
+//     if (category) {
+//       filter['metadata.category'] = category;
+//     }
+//     
+//     if (brand) {
+//       filter['metadata.brand'] = brand;
+//     }
+//     
+//     if (inStock) {
+//       filter['metadata.availability.in_stock'] = true;
+//     }
+// 
+//     // Use the main search tool
+//     const searchResult = await vectorSearchTool.execute({
+//       context: {
+//         query,
+//         indexName,
+//         topK: 10,
+//         filter,
+//         useReranking: true,
+//         contentType: 'product',
+//       },
+//     }, { skipValidation: true });
+// 
+//     // Extract product information from results
+//     const products = searchResult.results.map(result => {
+//       const metadata = result.metadata;
+//       return {
+//         name: metadata.name || 'Unknown Product',
+//         price: metadata.price || 0,
+//         description: metadata.description || result.text,
+//         category: metadata.category || 'Unknown',
+//         brand: metadata.brand || 'Unknown',
+//         score: result.score,
+//       };
+//     });
+// 
+//     return {
+//       products,
+//       totalFound: products.length,
+//     };
+//   },
+// });
