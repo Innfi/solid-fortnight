@@ -21,6 +21,24 @@ export class TestTool {
   public async run(payload: ToolPayload, context: Context): Promise<string> {
     context.log.info(`TestTool invoked with name: ${payload.name}`);
 
+    const response = await context.mcpServer.server.elicitInput({
+      message: `Please confirm the name you provided: ${payload.name}`,
+      requestedSchema: {
+        type: 'object',
+        properties: {
+          confirmedName: { type: 'string', description: 'description for elicitation' },
+        },
+      }
+    });
+
+    context.log.info(`Elicited response: ${JSON.stringify(response)}`);
+
+    await context.reportProgress({
+      message: `Processing name: ${payload.name}`,
+      progress: 1,
+      total: 10,
+    });
+
     return `Hello, ${payload.name}! This is a response from the test tool.`;
   }
 }
