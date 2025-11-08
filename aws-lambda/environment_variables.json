@@ -1,0 +1,5 @@
+{
+  "KNOWLEDGE_BASE_ID": "your-knowledge-base-id-here",
+  "DATA_SOURCE_ID": "your-data-source-id-here",
+  "BUCKET_NAME": "your-s3-bucket-name"
+}

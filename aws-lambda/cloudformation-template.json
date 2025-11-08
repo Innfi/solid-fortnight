@@ -1,0 +1,134 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "CloudFormation template for PDF to Bedrock Knowledge Base Lambda function",
+  
+  "Parameters": {
+    "KnowledgeBaseId": {
+      "Type": "String",
+      "Description": "The ID of your Bedrock Knowledge Base"
+    },
+    "DataSourceId": {
+      "Type": "String",
+      "Description": "The ID of your Bedrock Data Source"
+    },
+    "S3BucketName": {
+      "Type": "String",
+      "Description": "Name of the S3 bucket for PDF uploads"
+    },
+    "LambdaFunctionName": {
+      "Type": "String",
+      "Default": "pdf-to-bedrock-kb",
+      "Description": "Name of the Lambda function"
+    }
+  },
+  
+  "Resources": {
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["lambda.amazonaws.com"]
+            },
+            "Action": ["sts:AssumeRole"]
+          }]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        ],
+        "Policies": [{
+          "PolicyName": "LambdaS3BedrockPolicy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:GetObject",
+                  "s3:PutObject",
+                  "s3:ListBucket"
+                ],
+                "Resource": [
+                  {"Fn::Sub": "arn:aws:s3:::${S3BucketName}"},
+                  {"Fn::Sub": "arn:aws:s3:::${S3BucketName}/*"}
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "bedrock:InvokeModel",
+                  "bedrock:InvokeModelWithResponseStream"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "bedrock-agent:StartIngestionJob",
+                  "bedrock-agent:GetIngestionJob",
+                  "bedrock-agent:ListIngestionJobs"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }]
+      }
+    },
+    
+    "PDFProcessingLambda": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {"Ref": "LambdaFunctionName"},
+        "Runtime": "python3.11",
+        "Handler": "lambda_function.lambda_handler",
+        "Role": {"Fn::GetAtt": ["LambdaExecutionRole", "Arn"]},
+        "Code": {
+          "ZipFile": "# Placeholder - upload actual code via deployment package"
+        },
+        "Environment": {
+          "Variables": {
+            "KNOWLEDGE_BASE_ID": {"Ref": "KnowledgeBaseId"},
+            "DATA_SOURCE_ID": {"Ref": "DataSourceId"},
+            "BUCKET_NAME": {"Ref": "S3BucketName"}
+          }
+        },
+        "Timeout": 300,
+        "MemorySize": 512,
+        "Description": "Processes PDF files from S3 and ingests into Bedrock Knowledge Base"
+      }
+    },
+    
+    "S3InvokeLambdaPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {"Ref": "PDFProcessingLambda"},
+        "Action": "lambda:InvokeFunction",
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": {"Fn::Sub": "arn:aws:s3:::${S3BucketName}"}
+      }
+    },
+    
+    "LambdaLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {"Fn::Sub": "/aws/lambda/${LambdaFunctionName}"},
+        "RetentionInDays": 7
+      }
+    }
+  },
+  
+  "Outputs": {
+    "LambdaFunctionArn": {
+      "Description": "ARN of the Lambda function",
+      "Value": {"Fn::GetAtt": ["PDFProcessingLambda", "Arn"]}
+    },
+    "LambdaRoleArn": {
+      "Description": "ARN of the Lambda execution role",
+      "Value": {"Fn::GetAtt": ["LambdaExecutionRole", "Arn"]}
+    }
+  }
+}
